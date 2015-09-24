@@ -12,16 +12,41 @@ class MoviesController < ApplicationController
 
   def index
     @all_ratings = Movie.ratings
+    @movies = Movie.all
     @sort_by = params[:sort_by]
-    if(params[:ratings] != nil)
-      @sel_ratings = params[:ratings].keys
-    else
-      @sel_ratings = @all_ratings
+    if(@sort_by != nil)
+	    session[:sort_by] = @sort_by
     end
-    if (params[:sort_by] != nil)
-      @movies = Movie.where(:rating =>@sel_ratings).order(params[:sort_by])
+    if(params[:ratings] != nil || params[:sort_by] != nil)
+	    session[:parameters] = session[:parameters].present? ? session[:parameters] : {}
+  	if (params[:sort_by] != nil && params[:sort_by].length != 0)
+	  	session[:parameters][:sort_by] = params[:sort_by]
+  	elsif (session[:parameters] != nil && session[:parameters].length != 0)
+	  	params[:sort_by]  = session[:parameters][:sort_by]
+  	end
+	  if (params[:ratings] != nil)
+		  session[:parameters][:ratings] = params[:ratings]
+    end
+    elsif (session[:parameters] != nil && session[:parameters].length != 0)
+    	flash.keep
+    	redirect_to movies_path + '?' + session[:parameters].to_query
+    end
+
+    if(session[:parameters])
+    	@sel_ratings = (session[:parameters][:ratings].present? ? session[:parameters][:ratings].keys : @all_ratings)
+  	if(@sort_by == nil)
+	  	@sort_by = session[:parameters][:sort_by] ? session[:parameters][:sort_by] : params[:sort_by]
+  	end
     else
-      @movies = Movie.where(:rating =>@sel_ratings)
+	    @sel_ratings = @all_ratings
+      @sort_by = params[:sort_by]
+    end
+      @sort_by = session[:sort_by]
+
+      if(@sort_by != nil)
+	    @movies=Movie.where(:rating =>@sel_ratings).order(@sort_by)
+    else
+    	@movies=Movie.where(:rating =>@sel_ratings)
     end
   end
 
